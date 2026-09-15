@@ -1,98 +1,92 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { Link } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Microfone & Áudio</Text>
+        <Text style={styles.subtitle}>React Native + Expo</Text>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Demonstração de Áudio</Text>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        <Text style={styles.cardText}>
+          Este aplicativo demonstra como utilizar o microfone e a reprodução de
+          áudio em um aplicativo React Native.
+        </Text>
+      </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <Link href="/gravacao" style={styles.button}>
+        Gravar Áudio
+      </Link>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: "#101014",
+    padding: 24,
+    justifyContent: "center",
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+
+  header: {
+    marginBottom: 30,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
+
   title: {
-    textAlign: 'center',
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontWeight: "bold",
   },
-  code: {
-    textTransform: 'uppercase',
+
+  subtitle: {
+    color: "#A1A1AA",
+    fontSize: 16,
+    marginTop: 6,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+
+  card: {
+    backgroundColor: "#18181B",
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 24,
+  },
+
+  cardTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  cardText: {
+    color: "#A1A1AA",
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
+  button: {
+    backgroundColor: "rgb(220, 38, 38)",
+    color: "#FFFFFF",
+    textAlign: "center",
+    padding: 16,
+    borderRadius: 14,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+
+  buttonSecondary: {
+    backgroundColor: "#27272A",
+    color: "#FFFFFF",
+    textAlign: "center",
+    padding: 16,
+    borderRadius: 14,
+    fontSize: 16,
+    marginBottom: 12,
   },
 });
