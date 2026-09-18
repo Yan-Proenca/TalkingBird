@@ -1,26 +1,121 @@
-import { Link } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, Image, StyleSheet, View } from "react-native";
 
-export default function HomeScreen() {
+import AudioButton from "../../components/AudioButton";
+import Header from "../../components/Header";
+import RecordingStatus from "../../components/RecordingStatus";
+
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from "expo-audio";
+
+export default function GravacaoScreen() {
+  const [audioUri, setAudioUri] = useState<string | null>(null);
+
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
+
+  const player = useAudioPlayer(audioUri);
+  // hook reativo que força o componente a atualizar quando o áudio toca ou para
+  const playerStatus = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    configurarAudio();
+  }, []);
+
+  async function configurarAudio() {
+    const permission = await AudioModule.requestRecordingPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert("Permissão necessária", "Permita o acesso ao microfone.");
+      return;
+    }
+
+    await setAudioModeAsync({
+      allowsRecording: true,
+      playsInSilentMode: true,
+    });
+  }
+
+  async function iniciarGravacao() {
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+  }
+
+  async function pararGravacao() {
+    await recorder.stop();
+
+    if (recorder.uri) {
+      setAudioUri(recorder.uri);
+    }
+  }
+
+  function reproduzir() {
+    if (!audioUri) {
+      Alert.alert("Nenhum áudio", "Faça uma gravação primeiro.");
+      return;
+    }
+
+    // Configura a velocidade para o efeito Talking Tom
+    player.playbackRate = 1;
+    player.play();
+  }
+
+  // Define a imagem dinamicamente com base no estado em tempo real
+  function obterImagemEstado() {
+    if (recorderState.isRecording) {
+      return require("../../assets/playing.png");
+    }
+    if (playerStatus.playing) {
+      return require("../../assets/idle.png");
+    }
+    return require("../../assets/recording.png");
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Microfone & Áudio</Text>
-        <Text style={styles.subtitle}>React Native + Expo</Text>
+      <Header title="Talking Bird" subtitle="Fale com o AngryBird" />
+
+      <View style={styles.imageContainer}>
+        <Image
+          source={obterImagemEstado()}
+          style={styles.characterImage}
+          resizeMode="contain"
+        />
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Demonstração de Áudio</Text>
+      <RecordingStatus isRecording={recorderState.isRecording} />
 
-        <Text style={styles.cardText}>
-          Este aplicativo demonstra como utilizar o microfone e a reprodução de
-          áudio em um aplicativo React Native.
-        </Text>
+      <View style={styles.controlsContainer}>
+        {recorderState.isRecording ? (
+          <AudioButton
+            title="Parar gravação"
+            variant="danger"
+            onPress={pararGravacao}
+          />
+        ) : (
+          <AudioButton
+            title="Gravar"
+            onPress={iniciarGravacao}
+            disabled={playerStatus.playing}
+          />
+        )}
+
+        <AudioButton
+          title="Reproduzir"
+          variant="secondary"
+          disabled={
+            !audioUri || recorderState.isRecording || playerStatus.playing
+          }
+          onPress={reproduzir}
+        />
       </View>
-
-      <Link href="/gravacao" style={styles.button}>
-        Gravar Áudio
-      </Link>
     </View>
   );
 }
@@ -30,63 +125,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#101014",
     padding: 24,
+  },
+  imageContainer: {
+    flex: 1,
     justifyContent: "center",
+    alignItems: "center",
   },
-
-  header: {
-    marginBottom: 30,
+  characterImage: {
+    width: 400,
+    height: 400,
   },
-
-  title: {
-    color: "#FFFFFF",
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-
-  subtitle: {
-    color: "#A1A1AA",
-    fontSize: 16,
-    marginTop: 6,
-  },
-
-  card: {
-    backgroundColor: "#18181B",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 24,
-  },
-
-  cardTitle: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-
-  cardText: {
-    color: "#A1A1AA",
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-  button: {
-    backgroundColor: "rgb(220, 38, 38)",
-    color: "#FFFFFF",
-    textAlign: "center",
-    padding: 16,
-    borderRadius: 14,
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-
-  buttonSecondary: {
-    backgroundColor: "#27272A",
-    color: "#FFFFFF",
-    textAlign: "center",
-    padding: 16,
-    borderRadius: 14,
-    fontSize: 16,
-    marginBottom: 12,
+  controlsContainer: {
+    gap: 16,
+    paddingBottom: 24,
   },
 });
