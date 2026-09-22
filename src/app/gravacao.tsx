@@ -6,23 +6,23 @@ import Header from "../../components/Header";
 import RecordingStatus from "../../components/RecordingStatus";
 
 import {
-    AudioModule,
-    RecordingPresets,
-    setAudioModeAsync,
-    useAudioPlayer,
-    useAudioPlayerStatus,
-    useAudioRecorder,
-    useAudioRecorderState,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
 } from "expo-audio";
 
 export default function GravacaoScreen() {
   const [audioUri, setAudioUri] = useState<string | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean>(false);
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
 
   const player = useAudioPlayer(audioUri);
-  // hook reativo que força o componente a atualizar quando o áudio toca ou para
   const playerStatus = useAudioPlayerStatus(player);
 
   useEffect(() => {
@@ -30,44 +30,74 @@ export default function GravacaoScreen() {
   }, []);
 
   async function configurarAudio() {
-    const permission = await AudioModule.requestRecordingPermissionsAsync();
+    try {
+      const permission = await AudioModule.requestRecordingPermissionsAsync();
 
-    if (!permission.granted) {
-      Alert.alert("Permissão necessária", "Permita o acesso ao microfone.");
-      return;
+      if (!permission.granted) {
+        Alert.alert("Permissão necessária", "Permita o acesso ao microfone.");
+        setHasPermission(false);
+        return;
+      }
+
+      setHasPermission(true);
+
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
+      });
+    } catch (error) {
+      console.error("Erro ao configurar áudio:", error);
     }
-
-    await setAudioModeAsync({
-      allowsRecording: true,
-      playsInSilentMode: true,
-    });
   }
 
   async function iniciarGravacao() {
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-  }
+    if (!hasPermission) {
+      Alert.alert("Erro", "Permissão para gravação de áudio não concedida.");
+      return;
+    }
 
-  async function pararGravacao() {
-    await recorder.stop();
-
-    if (recorder.uri) {
-      setAudioUri(recorder.uri);
+    try {
+      await recorder.prepareToRecordAsync();
+      await recorder.record(); // Corrigido: adicionado await
+    } catch (error) {
+      console.error("Erro ao iniciar gravação:", error);
+      Alert.alert("Erro", "Não foi possível iniciar a gravação.");
     }
   }
 
-  function reproduzir() {
+  async function pararGravacao() {
+    try {
+      await recorder.stop();
+
+      if (recorder.uri) {
+        setAudioUri(recorder.uri);
+      }
+    } catch (error) {
+      console.error("Erro ao parar gravação:", error);
+    }
+  }
+
+  async function reproduzir() {
     if (!audioUri) {
       Alert.alert("Nenhum áudio", "Faça uma gravação primeiro.");
       return;
     }
 
-    // Configura a velocidade para o efeito Talking Tom
-    player.playbackRate = 1;
-    player.play();
+    try {
+      // Garante que o modo de áudio permita reprodução
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
+      });
+
+      player.playbackRate = 1;
+      player.play();
+    } catch (error) {
+      console.error("Erro ao reproduzir áudio:", error);
+      Alert.alert("Erro", "Falha ao reproduzir o áudio.");
+    }
   }
 
-  // Define a imagem dinamicamente com base no estado em tempo real
   function obterImagemEstado() {
     if (recorderState.isRecording) {
       return require("../../assets/playing.png");
@@ -103,7 +133,7 @@ export default function GravacaoScreen() {
           <AudioButton
             title="Gravar"
             onPress={iniciarGravacao}
-            disabled={playerStatus.playing}
+            disabled={playerStatus.playing || !hasPermission}
           />
         )}
 
